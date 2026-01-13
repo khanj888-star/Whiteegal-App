@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whiteegal Smart AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .pulse { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-10">
+
+    <div class="max-w-md mx-auto p-4 space-y-6">
+        <!-- Brand Header -->
+        <div class="glass p-8 rounded-[2rem] shadow-xl text-center border-b-4 border-green-700">
+            <h1 class="text-4xl font-black text-green-900 italic">WHITEEGAL</h1>
+            <p class="text-green-700 font-bold text-xs uppercase tracking-widest mt-1">Shuddh Ghar Ki Roti</p>
+        </div>
+
+        <!-- Voice Intro -->
+        <div class="bg-white p-6 rounded-3xl shadow-md text-center border border-gray-100">
+            <button id="introBtn" class="w-full py-4 bg-green-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                <span>??</span> Business Intro Sunein
+            </button>
+            <p id="introStatus" class="text-[10px] mt-2 text-green-600 font-bold"></p>
+        </div>
+
+        <!-- AI Diet Expert -->
+        <div class="bg-white p-6 rounded-[2rem] shadow-lg border border-orange-100">
+            <h2 class="font-bold text-gray-800 mb-4 flex items-center gap-2">? AI Diet Expert</h2>
+            <div class="relative mb-4">
+                <textarea id="userInput" placeholder="Sawal puchiye, jaise: Gym ke liye konsi roti best hai?" class="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500 h-28 text-sm shadow-inner"></textarea>
+                <button id="micBtn" class="absolute right-3 bottom-3 p-3 bg-orange-500 text-white rounded-full">??</button>
+            </div>
+            <button id="askBtn" class="w-full py-4 bg-orange-600 text-white rounded-xl font-bold shadow-md active:scale-95 transition-all">Sujhav Paayein</button>
+            
+            <div id="resultBox" class="hidden mt-4 p-4 bg-orange-50 rounded-xl border border-orange-200 text-sm text-gray-700 leading-relaxed"></div>
+        </div>
+
+        <!-- Contact -->
+        <div class="bg-green-900 p-8 rounded-[2.5rem] text-center text-white shadow-2xl">
+            <p class="text-2xl font-black mb-4 tracking-wider">8527860283</p>
+            <a href="https://wa.me/918527860283" class="bg-white text-green-900 font-black py-3 px-8 rounded-full inline-block">WhatsApp Order</a>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = ""; 
+
+        // Sound helper
+        function pcmToWav(base64, rate) {
+            const chars = atob(base64);
+            const bytes = new Uint8Array(chars.length);
+            for (let i = 0; i < chars.length; i++) bytes[i] = chars.charCodeAt(i);
+            const buffer = new ArrayBuffer(44 + bytes.length);
+            const v = new DataView(buffer);
+            const s = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+            s(0, 'RIFF'); v.setUint32(4, 32 + bytes.length, true); s(8, 'WAVE'); s(12, 'fmt ');
+            v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+            v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true);
+            v.setUint16(34, 16, true); s(36, 'data'); v.setUint32(40, bytes.length, true);
+            for (let i = 0; i < bytes.length; i++) v.setUint8(44 + i, bytes[i]);
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        // Voice Intro
+        document.getElementById('introBtn').onclick = async () => {
+            const btn = document.getElementById('introBtn');
+            btn.disabled = true;
+            const text = "Namaste! Whiteegal mein swagat hai. Hum late hain ghar ki shuddh rotiyan aur ayurvedic supplements. Order ke liye 8527860283 par sampark karein.";
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Say warmly in Hindi: " + text }] }],
+                        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } } },
+                        model: "gemini-2.5-flash-preview-tts"
+                    })
+                }).then(r => r.json());
+                const audio = new Audio(URL.createObjectURL(pcmToWav(res.candidates[0].content.parts[0].inlineData.data, 24000)));
+                audio.play();
+                audio.onended = () => btn.disabled = false;
+            } catch (e) { btn.disabled = false; }
+        };
+
+        // Mic
+        document.getElementById('micBtn').onclick = () => {
+            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            rec.lang = 'hi-IN';
+            rec.onstart = () => document.getElementById('micBtn').classList.add('pulse');
+            rec.onresult = (e) => document.getElementById('userInput').value = e.results[0][0].transcript;
+            rec.onend = () => document.getElementById('micBtn').classList.remove('pulse');
+            rec.start();
+        };
+
+        // AI Logic
+        document.getElementById('askBtn').onclick = async () => {
+            const q = document.getElementById('userInput').value;
+            const resBox = document.getElementById('resultBox');
+            if(!q) return;
+            resBox.classList.remove('hidden');
+            resBox.innerText = "AI soch raha hai...";
+            
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: q }] }],
+                        systemInstruction: { parts: [{ text: "You are Whiteegal Assistant. We sell Wheat, Makka, Bajra, Millets Roti and Shilajit Milk. Answer in short Hindi/Hinglish." }] }
+                    })
+                }).then(r => r.json());
+                resBox.innerText = res.candidates[0].content.parts[0].text;
+            } catch (e) { resBox.innerText = "Error: Network issue."; }
+        };
+    </script>
+</body>
+</html>
