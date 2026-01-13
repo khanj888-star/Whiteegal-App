@@ -14,43 +14,44 @@
 <body class="bg-gray-100 min-h-screen pb-10">
 
     <div class="max-w-md mx-auto p-4 space-y-6">
-        <!-- Brand Header -->
+        <!-- Header -->
         <div class="glass p-8 rounded-[2rem] shadow-xl text-center border-b-4 border-green-700">
-            <h1 class="text-4xl font-black text-green-900 italic">WHITEEGAL</h1>
+            <h1 class="text-4xl font-black text-green-900 italic tracking-tighter">WHITEEGAL</h1>
             <p class="text-green-700 font-bold text-xs uppercase tracking-widest mt-1">Shuddh Ghar Ki Roti</p>
         </div>
 
         <!-- Voice Intro -->
         <div class="bg-white p-6 rounded-3xl shadow-md text-center border border-gray-100">
             <button id="introBtn" class="w-full py-4 bg-green-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
-                <span>??</span> Business Intro Sunein
+                <span id="speakerIcon">??</span> <span id="introText">Business Intro Sunein</span>
             </button>
-            <p id="introStatus" class="text-[10px] mt-2 text-green-600 font-bold"></p>
+            <p id="introStatus" class="text-[10px] mt-2 text-green-600 font-bold h-4"></p>
         </div>
 
         <!-- AI Diet Expert -->
         <div class="bg-white p-6 rounded-[2rem] shadow-lg border border-orange-100">
-            <h2 class="font-bold text-gray-800 mb-4 flex items-center gap-2">? AI Diet Expert</h2>
+            <h2 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">? AI ???? ????</h2>
             <div class="relative mb-4">
-                <textarea id="userInput" placeholder="Sawal puchiye, jaise: Gym ke liye konsi roti best hai?" class="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500 h-28 text-sm shadow-inner"></textarea>
-                <button id="micBtn" class="absolute right-3 bottom-3 p-3 bg-orange-500 text-white rounded-full">??</button>
+                <textarea id="userInput" placeholder="Sawal puchiye, jaise: Wajan kam karne ke liye konsi roti best hai?" class="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500 h-28 text-sm shadow-inner resize-none"></textarea>
+                <button id="micBtn" class="absolute right-3 bottom-3 p-3 bg-orange-500 text-white rounded-full shadow-md">??</button>
             </div>
-            <button id="askBtn" class="w-full py-4 bg-orange-600 text-white rounded-xl font-bold shadow-md active:scale-95 transition-all">Sujhav Paayein</button>
+            <button id="askBtn" class="w-full py-4 bg-orange-600 text-white rounded-xl font-bold shadow-md active:scale-95 transition-all hover:bg-orange-700">????? ??????? ????</button>
             
-            <div id="resultBox" class="hidden mt-4 p-4 bg-orange-50 rounded-xl border border-orange-200 text-sm text-gray-700 leading-relaxed"></div>
+            <div id="resultBox" class="hidden mt-4 p-4 bg-orange-50 rounded-xl border border-orange-200 text-sm text-gray-700 leading-relaxed min-h-[50px]"></div>
         </div>
 
-        <!-- Contact -->
+        <!-- Contact Section -->
         <div class="bg-green-900 p-8 rounded-[2.5rem] text-center text-white shadow-2xl">
-            <p class="text-2xl font-black mb-4 tracking-wider">8527860283</p>
-            <a href="https://wa.me/918527860283" class="bg-white text-green-900 font-black py-3 px-8 rounded-full inline-block">WhatsApp Order</a>
+            <p class="text-xs font-bold text-green-400 mb-2 uppercase tracking-widest">Sunder Nagari, Delhi - 93</p>
+            <p class="text-2xl font-black mb-6 tracking-widest leading-none">8527860283</p>
+            <a href="https://wa.me/918527860283" target="_blank" class="bg-white text-green-900 font-black py-4 px-10 rounded-full inline-block shadow-lg hover:bg-gray-100 transition-all text-sm">WhatsApp Order Karein</a>
         </div>
     </div>
 
     <script>
-        const apiKey = ""; 
+        const apiKey = ""; // API Key provided by runtime
 
-        // Sound helper
+        // Wav Converter Utility
         function pcmToWav(base64, rate) {
             const chars = atob(base64);
             const bytes = new Uint8Array(chars.length);
@@ -66,30 +67,45 @@
             return new Blob([buffer], { type: 'audio/wav' });
         }
 
-        // Voice Intro
+        // Voice Intro Logic
         document.getElementById('introBtn').onclick = async () => {
             const btn = document.getElementById('introBtn');
+            const status = document.getElementById('introStatus');
             btn.disabled = true;
-            const text = "Namaste! Whiteegal mein swagat hai. Hum late hain ghar ki shuddh rotiyan aur ayurvedic supplements. Order ke liye 8527860283 par sampark karein.";
+            status.innerText = "??? ?? ??? ??...";
+            
+            const introMsg = "Namaste! Whiteegal mein aapka swagat hai. Hum late hain ghar jaisi shuddh aur taja rotiyan, jo hum khud apne aate se banate hain. Hum FSSAI certified hain. Order ke liye 8-5-2-7-8-6-0-2-8-3 par sampark karein.";
+            
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Say warmly in Hindi: " + text }] }],
+                        contents: [{ parts: [{ text: "Say professionally in Hindi: " + introMsg }] }],
                         generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } } },
                         model: "gemini-2.5-flash-preview-tts"
                     })
                 }).then(r => r.json());
-                const audio = new Audio(URL.createObjectURL(pcmToWav(res.candidates[0].content.parts[0].inlineData.data, 24000)));
+                
+                const pcmData = res.candidates[0].content.parts[0].inlineData.data;
+                const audio = new Audio(URL.createObjectURL(pcmToWav(pcmData, 24000)));
                 audio.play();
-                audio.onended = () => btn.disabled = false;
-            } catch (e) { btn.disabled = false; }
+                status.innerText = "?? ?? ??? ??...";
+                audio.onended = () => { btn.disabled = false; status.innerText = ""; };
+            } catch (e) {
+                btn.disabled = false;
+                status.innerText = "??????? ???? ??? ????? ?????";
+            }
         };
 
-        // Mic
+        // Mic/Speech Recognition
         document.getElementById('micBtn').onclick = () => {
-            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Apka browser mic support nahi karta.");
+                return;
+            }
+            const rec = new SpeechRecognition();
             rec.lang = 'hi-IN';
             rec.onstart = () => document.getElementById('micBtn').classList.add('pulse');
             rec.onresult = (e) => document.getElementById('userInput').value = e.results[0][0].transcript;
@@ -97,13 +113,18 @@
             rec.start();
         };
 
-        // AI Logic
+        // AI Response Logic
         document.getElementById('askBtn').onclick = async () => {
             const q = document.getElementById('userInput').value;
             const resBox = document.getElementById('resultBox');
-            if(!q) return;
+            const btn = document.getElementById('askBtn');
+            
+            if(!q.trim()) return;
+            
+            btn.disabled = true;
+            btn.innerText = "AI ??? ??? ??...";
             resBox.classList.remove('hidden');
-            resBox.innerText = "AI soch raha hai...";
+            resBox.innerText = "??????????...";
             
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -111,11 +132,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: q }] }],
-                        systemInstruction: { parts: [{ text: "You are Whiteegal Assistant. We sell Wheat, Makka, Bajra, Millets Roti and Shilajit Milk. Answer in short Hindi/Hinglish." }] }
+                        systemInstruction: { parts: [{ text: "You are Whiteegal Health Expert. We sell Wheat, Makka, Bajra, Millets Roti. We grind our own flour. Answer in friendly Hindi/Hinglish. Contact: 8527860283." }] }
                     })
                 }).then(r => r.json());
+                
                 resBox.innerText = res.candidates[0].content.parts[0].text;
-            } catch (e) { resBox.innerText = "Error: Network issue."; }
+            } catch (e) {
+                resBox.innerText = "?????? ?????? ??? ????? 10 ????? ??? ????? ?????";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "????? ??????? ????";
+            }
         };
     </script>
 </body>
